@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import TranscriptPanel from '@/components/lecture/TranscriptPanel';
+import NotesPanel from '@/components/lecture/NotesPanel';
 import RecordingControls from '@/components/lecture/RecordingControls';
 import useSpeechRecognition from '@/hooks/useSpeechRecognition';
 
@@ -14,6 +15,10 @@ export default function LectureSessionPage() {
   const lectureId = params.id as string;
   const [sessionData, setSessionData] = useState<any>(null);
   const [mode, setMode] = useState<'detailed' | 'simple'>('detailed');
+  const [notes, setNotes] = useState('');
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const lastProcessedLength = useRef(0);
+  const generationTimeout = useRef<NodeJS.Timeout>();
 
   const {
     transcript,
@@ -34,10 +39,80 @@ export default function LectureSessionPage() {
     }
   }, [lectureId]);
 
+  // Auto-generate notes when transcript grows
+  useEffect(() => {
+    if (!transcript) return;
+
+    const CHUNK_LENGTH = 200; // Process every ~200 characters
+    const currentLength = transcript.length;
+
+    if (currentLength - lastProcessedLength.current > CHUNK_LENGTH) {
+      // Debounce: wait 3 seconds of no new input
+      if (generationTimeout.current) {
+        clearTimeout(generationTimeout.current);
+      }
+
+      generationTimeout.current = setTimeout(() => {
+        generateNotes(transcript.slice(lastProcessedLength.current));
+        lastProcessedLength.current = currentLength;
+      }, 3000);
+    }
+  }, [transcript]);
+
+  const generateNotes = async (transcriptChunk: string) => {
+    if (isGeneratingNotes || !transcriptChunk.trim()) return;
+
+    setIsGeneratingNotes(true);
+
+    try {
+      const response = await fetch('/api/generate-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcriptChunk,
+          slidesContent: sessionData?.slidesContent,
+          previousNotes: notes,
+          mode,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate notes');
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        let chunk = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          chunk = decoder.decode(value, { stream: true });
+          setNotes(prev => prev + chunk);
+        }
+        setNotes(prev => prev + '\n\n---\n\n');
+      }
+    } catch (err) {
+      console.error('Error generating notes:', err);
+    } finally {
+      setIsGeneratingNotes(false);
+    }
+  };
+
   const handleEndLecture = () => {
     stopListening();
     if (confirm('Are you sure you want to end this lecture?')) {
       router.push('/dashboard');
+    }
+  };
+
+  const handleModeChange = (newMode: 'detailed' | 'simple') => {
+    setMode(newMode);
+    // Regenerate all notes with new mode
+    if (transcript && confirm('Regenerate all notes in ' + newMode + ' mode?')) {
+      setNotes('');
+      lastProcessedLength.current = 0;
+      generateNotes(transcript);
     }
   };
 
@@ -68,7 +143,7 @@ export default function LectureSessionPage() {
             <div className="flex items-center gap-4">
               <select
                 value={mode}
-                onChange={(e) => setMode(e.target.value as 'detailed' | 'simple')}
+                onChange={(e) => handleModeChange(e.target.value as 'detailed' | 'simple')}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium"
               >
                 <option value="detailed">Detailed Mode</option>
@@ -85,29 +160,16 @@ export default function LectureSessionPage() {
       {/* Main Content - Split Screen */}
       <main className="flex-1 container mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-180px)]">
-          {/* Left: Transcript Panel */}
           <TranscriptPanel
             transcript={transcript}
             interimTranscript={interimTranscript}
             isListening={isListening}
           />
-
-          {/* Right: Notes Panel (Placeholder for Step 4) */}
-          <div className="h-full flex flex-col bg-white rounded-lg shadow-md border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">AI-Generated Notes</h2>
-              <p className="text-sm text-gray-500 mt-1">Mode: {mode === 'detailed' ? 'Detailed' : 'Simplified'}</p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="text-center text-gray-400 mt-12">
-                <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-lg font-medium">AI Note Generation Coming in Step 4</p>
-                <p className="text-sm mt-2">Notes will appear here as the lecture progresses</p>
-              </div>
-            </div>
-          </div>
+          <NotesPanel
+            notes={notes}
+            isGenerating={isGeneratingNotes}
+            mode={mode}
+          />
         </div>
       </main>
 
@@ -118,7 +180,11 @@ export default function LectureSessionPage() {
             isListening={isListening}
             onStart={startListening}
             onStop={stopListening}
-            onReset={resetTranscript}
+            onReset={() => {
+              resetTranscript();
+              setNotes('');
+              lastProcessedLength.current = 0;
+            }}
           />
 
           {error && (
