@@ -6,8 +6,9 @@ import { ParsedSlides } from '@/lib/types';
  */
 export async function parsePDF(buffer: Buffer, fileName: string): Promise<ParsedSlides> {
   try {
-    // Dynamic import for pdf-parse (CommonJS)
-    const pdfParse = (await import('pdf-parse')).default;
+    // Dynamic import for pdf-parse
+    const pdfParseModule = await import('pdf-parse');
+    const pdfParse = pdfParseModule.default || pdfParseModule;
     const data = await pdfParse(buffer);
 
     // Extract and clean text
