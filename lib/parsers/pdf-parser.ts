@@ -1,29 +1,19 @@
 import { ParsedSlides } from '@/lib/types';
 
-// Dynamic import for pdf-parse (CommonJS module)
-const getPdfParse = async () => {
-  const pdfParse = await import('pdf-parse');
-  return pdfParse.default || pdfParse;
-};
-
 /**
  * Parse PDF file and extract text content
- * @param buffer - PDF file buffer
- * @param fileName - Original file name
- * @returns Parsed slides content
+ * Note: This uses dynamic import to handle CommonJS module
  */
 export async function parsePDF(buffer: Buffer, fileName: string): Promise<ParsedSlides> {
   try {
-    const pdf = await getPdfParse();
-    const data = await pdf(buffer);
+    // Dynamic import for pdf-parse (CommonJS)
+    const pdfParse = (await import('pdf-parse')).default;
+    const data = await pdfParse(buffer);
 
-    // Extract text content
-    let content = data.text;
-
-    // Clean up the text
-    content = content
-      .replace(/\r\n/g, '\n') // Normalize line endings
-      .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
+    // Extract and clean text
+    const content = data.text
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
 
     return {
@@ -38,11 +28,7 @@ export async function parsePDF(buffer: Buffer, fileName: string): Promise<Parsed
   }
 }
 
-/**
- * Validate if buffer is a valid PDF
- */
 export function isValidPDF(buffer: Buffer): boolean {
-  // PDF files start with %PDF
   const header = buffer.slice(0, 4).toString('ascii');
   return header === '%PDF';
 }
