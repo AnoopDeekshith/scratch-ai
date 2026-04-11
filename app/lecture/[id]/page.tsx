@@ -18,7 +18,7 @@ export default function LectureSessionPage() {
   const [notes, setNotes] = useState('');
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const lastProcessedLength = useRef(0);
-  const generationTimeout = useRef<NodeJS.Timeout>();
+  const generationTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const {
     transcript,
