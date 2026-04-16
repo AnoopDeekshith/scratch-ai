@@ -46,13 +46,13 @@ export default function LectureSessionPage() {
     resetTranscript: whisper.resetTranscript,
     error: whisper.error,
   } : {
-    transcript: webSpeech.transcript,
-    isListening: webSpeech.isListening,
-    startListening: webSpeech.startListening,
-    stopListening: webSpeech.stopListening,
-    resetTranscript: webSpeech.resetTranscript,
-    error: webSpeech.error,
-  };
+      transcript: webSpeech.transcript,
+      isListening: webSpeech.isListening,
+      startListening: webSpeech.startListening,
+      stopListening: webSpeech.stopListening,
+      resetTranscript: webSpeech.resetTranscript,
+      error: webSpeech.error,
+    };
 
   const interimTranscript = transcriptionMethod === 'webspeech' ? webSpeech.interimTranscript : whisper.interimTranscript;
   const isProcessing = transcriptionMethod === 'whisper' ? whisper.isProcessing : false;
@@ -70,11 +70,11 @@ export default function LectureSessionPage() {
   useEffect(() => {
     if (!transcript) return;
 
-    const CHUNK_LENGTH = 200; // Process every ~200 characters
+    const CHUNK_LENGTH = 100; // Process every ~100 characters for faster feedback
     const currentLength = transcript.length;
 
     if (currentLength - lastProcessedLength.current > CHUNK_LENGTH) {
-      // Debounce: wait 3 seconds of no new input
+      // Debounce: wait 1.5 seconds of no new input
       if (generationTimeout.current) {
         clearTimeout(generationTimeout.current);
       }
@@ -82,7 +82,7 @@ export default function LectureSessionPage() {
       generationTimeout.current = setTimeout(() => {
         generateNotes(transcript.slice(lastProcessedLength.current));
         lastProcessedLength.current = currentLength;
-      }, 3000);
+      }, 1500);
     }
   }, [transcript]);
 
@@ -160,9 +160,9 @@ export default function LectureSessionPage() {
               </Link>
               <div className="text-gray-400">|</div>
               <div>
-                <h1 className="font-semibold text-gray-900">{sessionData?.title || 'Lecture Session'}</h1>
+                <h1 className="font-semibold text-gray-900 dark:text-gray-100">{sessionData?.title || 'Lecture Session'}</h1>
                 {sessionData?.courseName && (
-                  <p className="text-sm text-gray-500">{sessionData.courseName}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{sessionData.courseName}</p>
                 )}
               </div>
             </div>
@@ -212,16 +212,16 @@ export default function LectureSessionPage() {
       <main className="flex-1 overflow-hidden">
         <div className="container mx-auto px-6 py-6 h-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-          <TranscriptPanel
-            transcript={transcript}
-            interimTranscript={interimTranscript}
-            isListening={isActivelyListening}
-          />
-          <NotesPanel
-            notes={notes}
-            isGenerating={isGeneratingNotes}
-            mode={mode}
-          />
+            <TranscriptPanel
+              transcript={transcript}
+              interimTranscript={interimTranscript}
+              isListening={isActivelyListening}
+            />
+            <NotesPanel
+              notes={notes}
+              isGenerating={isGeneratingNotes}
+              mode={mode}
+            />
           </div>
         </div>
       </main>
@@ -241,14 +241,14 @@ export default function LectureSessionPage() {
           />
 
           {isProcessing && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-700 dark:text-blue-300 text-sm flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
               <span>Processing audio with Whisper...</span>
             </div>
           )}
 
           {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
               {error}
               {transcriptionMethod === 'whisper' && (
                 <p className="mt-2">Try switching to Web Speech API if Whisper is unavailable.</p>
@@ -257,14 +257,14 @@ export default function LectureSessionPage() {
           )}
 
           {sessionData?.slidesContent && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-900 dark:text-blue-300">
               <strong>Slides loaded:</strong> AI will use your uploaded slides for context
             </div>
           )}
 
           {transcriptionMethod === 'whisper' && (
-            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-              <strong>Using OpenAI Whisper:</strong> High-accuracy transcription (~$0.006/min). Audio is processed in 15-second chunks.
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+              <strong>Using OpenAI Whisper:</strong> High-accuracy transcription (~$0.006/min). Audio is processed in 5-second chunks.
             </div>
           )}
         </div>
