@@ -18,9 +18,9 @@ export default function TranscriptPanel({ transcript, interimTranscript, isListe
   }, [transcript, interimTranscript]);
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg shadow-md border border-gray-200">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Live Transcript</h2>
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 transition-colors">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Live Transcript</h2>
         {isListening && (
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>

@@ -132,10 +132,10 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
   }, [notes, isGenerating]);
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg shadow-md border border-gray-200">
-      <div className="p-4 border-b border-gray-200">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 transition-colors">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">AI-Generated Notes</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI-Generated Notes</h2>
           {isGenerating && (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -148,7 +148,7 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
         </p>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 bg-gray-50">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900 transition-colors">
         {!notes ? (
           <div className="text-center text-gray-400 mt-12">
             <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,7 +162,7 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
             {contentBlocks.map((block, index) => (
               <div key={index}>
                 {block.type === 'markdown' ? (
-                  <div className="prose prose-sm prose-slate max-w-none prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-li:text-gray-800 prose-code:text-blue-600 prose-pre:bg-gray-800">
+                  <div className="prose prose-sm prose-slate dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-800 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-li:text-gray-800 dark:prose-li:text-gray-300 prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-pre:bg-gray-800 dark:prose-pre:bg-gray-950">
                     <ReactMarkdown>{block.content}</ReactMarkdown>
                   </div>
                 ) : block.type === 'diagram' ? (
