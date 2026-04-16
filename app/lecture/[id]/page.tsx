@@ -52,7 +52,7 @@ export default function LectureSessionPage() {
     error: webSpeech.error,
   };
 
-  const interimTranscript = transcriptionMethod === 'webspeech' ? webSpeech.interimTranscript : '';
+  const interimTranscript = transcriptionMethod === 'webspeech' ? webSpeech.interimTranscript : whisper.interimTranscript;
   const isProcessing = transcriptionMethod === 'whisper' ? whisper.isProcessing : false;
 
   useEffect(() => {
@@ -142,9 +142,9 @@ export default function LectureSessionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white shadow-sm">
+      <header className="flex-shrink-0 border-b border-gray-200 bg-white shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -192,8 +192,9 @@ export default function LectureSessionPage() {
       </header>
 
       {/* Main Content - Split Screen */}
-      <main className="flex-1 container mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-180px)]">
+      <main className="flex-1 overflow-hidden">
+        <div className="container mx-auto px-6 py-6 h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
           <TranscriptPanel
             transcript={transcript}
             interimTranscript={interimTranscript}
@@ -204,11 +205,12 @@ export default function LectureSessionPage() {
             isGenerating={isGeneratingNotes}
             mode={mode}
           />
+          </div>
         </div>
       </main>
 
       {/* Footer Controls */}
-      <footer className="border-t border-gray-200 bg-white py-4">
+      <footer className="flex-shrink-0 border-t border-gray-200 bg-white py-4 shadow-lg">
         <div className="container mx-auto px-6">
           <RecordingControls
             isListening={isActivelyListening}

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 
 interface UseWhisperRecordingReturn {
   transcript: string;
+  interimTranscript: string;
   isRecording: boolean;
   isProcessing: boolean;
   startRecording: () => Promise<void>;
@@ -14,6 +15,7 @@ interface UseWhisperRecordingReturn {
 
 export default function useWhisperRecording(): UseWhisperRecordingReturn {
   const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,7 @@ export default function useWhisperRecording(): UseWhisperRecordingReturn {
   const sendAudioChunk = async (audioBlob: Blob) => {
     try {
       setIsProcessing(true);
+      setInterimTranscript('Processing audio...');
 
       const formData = new FormData();
       formData.append('audio', audioBlob, 'audio.webm');
@@ -44,9 +47,11 @@ export default function useWhisperRecording(): UseWhisperRecordingReturn {
       if (data.text && data.text.trim()) {
         setTranscript(prev => prev + ' ' + data.text.trim());
       }
+      setInterimTranscript('');
     } catch (err: any) {
       console.error('Whisper transcription error:', err);
       setError(err.message || 'Transcription failed');
+      setInterimTranscript('');
     } finally {
       setIsProcessing(false);
     }
@@ -79,8 +84,9 @@ export default function useWhisperRecording(): UseWhisperRecordingReturn {
       mediaRecorder.start();
       mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
+      setInterimTranscript('Listening...');
 
-      // Send audio chunks every 15 seconds
+      // Send audio chunks every 5 seconds for faster feedback
       chunkIntervalRef.current = setInterval(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
           mediaRecorderRef.current.stop();
@@ -90,10 +96,11 @@ export default function useWhisperRecording(): UseWhisperRecordingReturn {
           setTimeout(() => {
             if (mediaRecorderRef.current && isRecording) {
               mediaRecorderRef.current.start();
+              setInterimTranscript('Listening...');
             }
           }, 100);
         }
-      }, 15000);
+      }, 5000);
 
     } catch (err: any) {
       console.error('Error starting recording:', err);
@@ -117,15 +124,18 @@ export default function useWhisperRecording(): UseWhisperRecordingReturn {
     processAndSendChunk();
 
     setIsRecording(false);
+    setInterimTranscript('');
   };
 
   const resetTranscript = () => {
     setTranscript('');
+    setInterimTranscript('');
     audioChunksRef.current = [];
   };
 
   return {
     transcript,
+    interimTranscript,
     isRecording,
     isProcessing,
     startRecording,

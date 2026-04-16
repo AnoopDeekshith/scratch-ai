@@ -150,7 +150,7 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
             {contentBlocks.map((block, index) => (
               <div key={index}>
                 {block.type === 'markdown' ? (
-                  <div className="prose prose-sm max-w-none">
+                  <div className="prose prose-sm prose-slate max-w-none">
                     <ReactMarkdown>{block.content}</ReactMarkdown>
                   </div>
                 ) : block.type === 'diagram' ? (

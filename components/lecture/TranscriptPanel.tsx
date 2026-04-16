@@ -41,11 +41,11 @@ export default function TranscriptPanel({ transcript, interimTranscript, isListe
         )}
 
         {transcript && (
-          <p className="text-gray-700 leading-relaxed">{transcript}</p>
+          <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{transcript}</p>
         )}
 
         {interimTranscript && (
-          <p className="text-gray-400 italic leading-relaxed">{interimTranscript}</p>
+          <p className="text-blue-600 italic leading-relaxed font-medium animate-pulse">{interimTranscript}</p>
         )}
       </div>
     </div>
