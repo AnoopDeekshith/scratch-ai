@@ -8,6 +8,7 @@ import TranscriptPanel from '@/components/lecture/TranscriptPanel';
 import NotesPanel from '@/components/lecture/NotesPanel';
 import RecordingControls from '@/components/lecture/RecordingControls';
 import useSpeechRecognition from '@/hooks/useSpeechRecognition';
+import useWhisperRecording from '@/hooks/useWhisperRecording';
 
 export default function LectureSessionPage() {
   const params = useParams();
@@ -17,18 +18,42 @@ export default function LectureSessionPage() {
   const [mode, setMode] = useState<'detailed' | 'simple'>('detailed');
   const [notes, setNotes] = useState('');
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const [transcriptionMethod, setTranscriptionMethod] = useState<'webspeech' | 'whisper'>('whisper');
   const lastProcessedLength = useRef(0);
   const generationTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Web Speech API hook
+  const webSpeech = useSpeechRecognition();
+
+  // Whisper API hook
+  const whisper = useWhisperRecording();
+
+  // Use the selected transcription method
   const {
     transcript,
-    interimTranscript,
-    isListening,
-    startListening,
-    stopListening,
-    resetTranscript,
+    isListening: isActivelyListening,
+    startListening: startActiveListening,
+    stopListening: stopActiveListening,
+    resetTranscript: resetActiveTranscript,
     error,
-  } = useSpeechRecognition();
+  } = transcriptionMethod === 'whisper' ? {
+    transcript: whisper.transcript,
+    isListening: whisper.isRecording,
+    startListening: whisper.startRecording,
+    stopListening: whisper.stopRecording,
+    resetTranscript: whisper.resetTranscript,
+    error: whisper.error,
+  } : {
+    transcript: webSpeech.transcript,
+    isListening: webSpeech.isListening,
+    startListening: webSpeech.startListening,
+    stopListening: webSpeech.stopListening,
+    resetTranscript: webSpeech.resetTranscript,
+    error: webSpeech.error,
+  };
+
+  const interimTranscript = transcriptionMethod === 'webspeech' ? webSpeech.interimTranscript : '';
+  const isProcessing = transcriptionMethod === 'whisper' ? whisper.isProcessing : false;
 
   useEffect(() => {
     const data = localStorage.getItem(`session-${lectureId}`);
@@ -100,7 +125,7 @@ export default function LectureSessionPage() {
   };
 
   const handleEndLecture = () => {
-    stopListening();
+    stopActiveListening();
     if (confirm('Are you sure you want to end this lecture?')) {
       router.push('/dashboard');
     }
@@ -142,6 +167,15 @@ export default function LectureSessionPage() {
 
             <div className="flex items-center gap-4">
               <select
+                value={transcriptionMethod}
+                onChange={(e) => setTranscriptionMethod(e.target.value as 'webspeech' | 'whisper')}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium"
+                disabled={isActivelyListening}
+              >
+                <option value="whisper">OpenAI Whisper (High Accuracy)</option>
+                <option value="webspeech">Web Speech (Free, Real-time)</option>
+              </select>
+              <select
                 value={mode}
                 onChange={(e) => handleModeChange(e.target.value as 'detailed' | 'simple')}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium"
@@ -163,7 +197,7 @@ export default function LectureSessionPage() {
           <TranscriptPanel
             transcript={transcript}
             interimTranscript={interimTranscript}
-            isListening={isListening}
+            isListening={isActivelyListening}
           />
           <NotesPanel
             notes={notes}
@@ -177,25 +211,41 @@ export default function LectureSessionPage() {
       <footer className="border-t border-gray-200 bg-white py-4">
         <div className="container mx-auto px-6">
           <RecordingControls
-            isListening={isListening}
-            onStart={startListening}
-            onStop={stopListening}
+            isListening={isActivelyListening}
+            onStart={startActiveListening}
+            onStop={stopActiveListening}
             onReset={() => {
-              resetTranscript();
+              resetActiveTranscript();
               setNotes('');
               lastProcessedLength.current = 0;
             }}
           />
 
+          {isProcessing && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span>Processing audio with Whisper...</span>
+            </div>
+          )}
+
           {error && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
+              {transcriptionMethod === 'whisper' && (
+                <p className="mt-2">Try switching to Web Speech API if Whisper is unavailable.</p>
+              )}
             </div>
           )}
 
           {sessionData?.slidesContent && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
               <strong>Slides loaded:</strong> AI will use your uploaded slides for context
+            </div>
+          )}
+
+          {transcriptionMethod === 'whisper' && (
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+              <strong>Using OpenAI Whisper:</strong> High-accuracy transcription (~$0.006/min). Audio is processed in 15-second chunks.
             </div>
           )}
         </div>
