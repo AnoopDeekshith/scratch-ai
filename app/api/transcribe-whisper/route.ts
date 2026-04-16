@@ -1,10 +1,6 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
@@ -13,6 +9,11 @@ export async function POST(request: NextRequest) {
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    // Initialize OpenAI client inside the request handler to ensure env vars are loaded
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const formData = await request.formData();
     const audio = formData.get('audio') as File;
