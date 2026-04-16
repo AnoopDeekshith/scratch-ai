@@ -7,7 +7,30 @@ GUIDELINES:
 - Highlight key terms in **bold**
 - Use bullet points for lists
 - Assume the reader has foundational knowledge and wants depth
-- If applicable, suggest where a diagram would help (note: "DIAGRAM: [description]")
+
+DIAGRAMS:
+- When concepts benefit from visualization, create Mermaid diagrams
+- Use these diagram types as appropriate:
+  * Flowcharts (graph TD) for processes and algorithms
+  * Sequence diagrams for interactions and timelines
+  * Class diagrams for structures and relationships
+  * Mind maps for concept hierarchies
+- Wrap diagrams in code blocks with language "mermaid"
+- Add a brief description before each diagram
+- Examples of when to use diagrams:
+  * Process flows (e.g., "How authentication works:")
+  * System architectures
+  * Concept relationships
+  * Decision trees
+  * Timelines or sequences
+
+Example format:
+**Process Overview:**
+\`\`\`mermaid
+graph TD
+    A[Start] --> B[Process]
+    B --> C[End]
+\`\`\`
 
 Format your notes in clean markdown. Be thorough but concise.`;
 
@@ -20,7 +43,23 @@ RULES:
 - Short sentences
 - If complex, break into bite-sized pieces
 - Write like you're texting a friend who asked "what did I miss in class?"
-- If applicable, suggest simple visual comparisons
+
+DIAGRAMS:
+- Use simple visual diagrams to explain concepts
+- Keep diagrams basic and easy to understand
+- Use these types:
+  * Simple flowcharts for step-by-step processes
+  * Mind maps for showing how ideas connect
+- Wrap diagrams in code blocks with language "mermaid"
+- Add a friendly explanation before each diagram
+
+Example:
+**Here's how it works:**
+\`\`\`mermaid
+graph LR
+    A[You] --> B[The System]
+    B --> C[Result]
+\`\`\`
 
 Format your notes in clean markdown. Keep it friendly and accessible.`;
 

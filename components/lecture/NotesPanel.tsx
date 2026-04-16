@@ -1,12 +1,19 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
+import DiagramRenderer from './DiagramRenderer';
 
 interface NotesPanelProps {
   notes: string;
   isGenerating: boolean;
   mode: 'detailed' | 'simple';
+}
+
+interface ContentBlock {
+  type: 'markdown' | 'diagram';
+  content: string;
+  id?: string;
 }
 
 export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProps) {
@@ -16,6 +23,52 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  }, [notes]);
+
+  // Parse notes into markdown and diagram blocks
+  const contentBlocks = useMemo(() => {
+    if (!notes) return [];
+
+    const blocks: ContentBlock[] = [];
+    const mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let match;
+    let diagramCount = 0;
+
+    while ((match = mermaidRegex.exec(notes)) !== null) {
+      // Add markdown content before this diagram
+      if (match.index > lastIndex) {
+        const markdownContent = notes.slice(lastIndex, match.index).trim();
+        if (markdownContent) {
+          blocks.push({
+            type: 'markdown',
+            content: markdownContent,
+          });
+        }
+      }
+
+      // Add the diagram
+      blocks.push({
+        type: 'diagram',
+        content: match[1].trim(),
+        id: `diagram-${Date.now()}-${diagramCount++}`,
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining markdown content
+    if (lastIndex < notes.length) {
+      const remainingContent = notes.slice(lastIndex).trim();
+      if (remainingContent) {
+        blocks.push({
+          type: 'markdown',
+          content: remainingContent,
+        });
+      }
+    }
+
+    return blocks;
   }, [notes]);
 
   return (
@@ -45,8 +98,18 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
             <p className="text-sm mt-2">Start recording to generate AI notes</p>
           </div>
         ) : (
-          <div className="prose prose-sm max-w-none">
-            <ReactMarkdown>{notes}</ReactMarkdown>
+          <div className="space-y-4">
+            {contentBlocks.map((block, index) => (
+              <div key={index}>
+                {block.type === 'markdown' ? (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown>{block.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <DiagramRenderer code={block.content} id={block.id!} />
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
