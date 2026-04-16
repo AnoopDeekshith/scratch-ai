@@ -32,6 +32,18 @@ graph TD
     B --> C[End]
 \`\`\`
 
+TO-DO ITEMS:
+- Extract actionable tasks mentioned in the lecture
+- Format as a special section at the end of your notes
+- Use this exact format for to-dos:
+
+**Action Items:**
+- [ ] Task 1 description
+- [ ] Task 2 description
+- [ ] Task 3 description
+
+Only include actual action items (homework, assignments, things to review, practice problems, etc.)
+
 Format your notes in clean markdown. Be thorough but concise.`;
 
 export const SIMPLE_MODE_PROMPT = `You are a friendly tutor explaining things to someone with zero background in this topic.
@@ -60,6 +72,15 @@ graph LR
     A[You] --> B[The System]
     B --> C[Result]
 \`\`\`
+
+TO-DO ITEMS:
+- Pull out any homework, assignments, or things to do
+- Put them at the end in a simple list
+- Use this format:
+
+**Action Items:**
+- [ ] Task 1
+- [ ] Task 2
 
 Format your notes in clean markdown. Keep it friendly and accessible.`;
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import DiagramRenderer from './DiagramRenderer';
+import TodoList from './TodoList';
 
 interface NotesPanelProps {
   notes: string;
@@ -11,9 +12,10 @@ interface NotesPanelProps {
 }
 
 interface ContentBlock {
-  type: 'markdown' | 'diagram';
+  type: 'markdown' | 'diagram' | 'todos';
   content: string;
   id?: string;
+  todos?: Array<{ text: string; completed: boolean }>;
 }
 
 export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProps) {
@@ -25,20 +27,57 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
     }
   }, [notes]);
 
-  // Parse notes into markdown and diagram blocks
+  // Parse notes into markdown, diagram, and todo blocks
   const contentBlocks = useMemo(() => {
     if (!notes) return [];
 
     const blocks: ContentBlock[] = [];
+    let workingNotes = notes;
+
+    // Extract diagrams
     const mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
-    let lastIndex = 0;
+    const diagramMatches: Array<{ content: string; index: number; length: number }> = [];
     let match;
     let diagramCount = 0;
 
     while ((match = mermaidRegex.exec(notes)) !== null) {
+      diagramMatches.push({
+        content: match[1].trim(),
+        index: match.index,
+        length: match[0].length,
+      });
+    }
+
+    // Extract todos (looking for Action Items section with checkbox list)
+    const todoSectionRegex = /\*\*Action Items:\*\*\s*((?:- \[[ x]\].*\n?)+)/gi;
+    const todoMatch = todoSectionRegex.exec(notes);
+    let todos: Array<{ text: string; completed: boolean }> = [];
+
+    if (todoMatch) {
+      const todoLines = todoMatch[1].trim().split('\n');
+      todos = todoLines
+        .map(line => {
+          const checkboxMatch = line.match(/- \[([ x])\]\s*(.+)/i);
+          if (checkboxMatch) {
+            return {
+              text: checkboxMatch[2].trim(),
+              completed: checkboxMatch[1].toLowerCase() === 'x',
+            };
+          }
+          return null;
+        })
+        .filter((todo): todo is { text: string; completed: boolean } => todo !== null);
+
+      // Remove todo section from working notes
+      workingNotes = workingNotes.replace(todoMatch[0], '').trim();
+    }
+
+    // Build blocks
+    let lastIndex = 0;
+    diagramMatches.forEach((diagram, i) => {
       // Add markdown content before this diagram
-      if (match.index > lastIndex) {
-        const markdownContent = notes.slice(lastIndex, match.index).trim();
+      if (diagram.index > lastIndex) {
+        const markdownContent = workingNotes.slice(lastIndex, diagram.index).trim();
         if (markdownContent) {
           blocks.push({
             type: 'markdown',
@@ -50,22 +89,31 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
       // Add the diagram
       blocks.push({
         type: 'diagram',
-        content: match[1].trim(),
-        id: `diagram-${Date.now()}-${diagramCount++}`,
+        content: diagram.content,
+        id: `diagram-${Date.now()}-${i}`,
       });
 
-      lastIndex = match.index + match[0].length;
-    }
+      lastIndex = diagram.index + diagram.length;
+    });
 
     // Add remaining markdown content
-    if (lastIndex < notes.length) {
-      const remainingContent = notes.slice(lastIndex).trim();
+    if (lastIndex < workingNotes.length) {
+      const remainingContent = workingNotes.slice(lastIndex).trim();
       if (remainingContent) {
         blocks.push({
           type: 'markdown',
           content: remainingContent,
         });
       }
+    }
+
+    // Add todos at the end if any
+    if (todos.length > 0) {
+      blocks.push({
+        type: 'todos',
+        content: '',
+        todos,
+      });
     }
 
     return blocks;
@@ -105,9 +153,11 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown>{block.content}</ReactMarkdown>
                   </div>
-                ) : (
+                ) : block.type === 'diagram' ? (
                   <DiagramRenderer code={block.content} id={block.id!} />
-                )}
+                ) : block.type === 'todos' && block.todos ? (
+                  <TodoList todos={block.todos} />
+                ) : null}
               </div>
             ))}
           </div>
