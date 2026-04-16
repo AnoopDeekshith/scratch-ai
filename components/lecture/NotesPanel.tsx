@@ -23,13 +23,25 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, [notes]);
 
   // Parse notes into markdown, diagram, and todo blocks
+  // Only parse if not currently generating for better performance
   const contentBlocks = useMemo(() => {
     if (!notes) return [];
+
+    // If generating, show raw markdown for real-time streaming
+    if (isGenerating) {
+      return [{
+        type: 'markdown' as const,
+        content: notes,
+      }];
+    }
 
     const blocks: ContentBlock[] = [];
     let workingNotes = notes;
@@ -117,7 +129,7 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
     }
 
     return blocks;
-  }, [notes]);
+  }, [notes, isGenerating]);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg shadow-md border border-gray-200">
@@ -136,7 +148,7 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
         </p>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 bg-gray-50">
         {!notes ? (
           <div className="text-center text-gray-400 mt-12">
             <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +162,7 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
             {contentBlocks.map((block, index) => (
               <div key={index}>
                 {block.type === 'markdown' ? (
-                  <div className="prose prose-sm prose-slate max-w-none">
+                  <div className="prose prose-sm prose-slate max-w-none prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-li:text-gray-800 prose-code:text-blue-600 prose-pre:bg-gray-800">
                     <ReactMarkdown>{block.content}</ReactMarkdown>
                   </div>
                 ) : block.type === 'diagram' ? (
@@ -160,6 +172,12 @@ export default function NotesPanel({ notes, isGenerating, mode }: NotesPanelProp
                 ) : null}
               </div>
             ))}
+            {isGenerating && (
+              <div className="flex items-center gap-2 text-blue-600 italic py-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className="text-sm">Writing notes...</span>
+              </div>
+            )}
           </div>
         )}
       </div>
